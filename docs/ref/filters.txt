@@ -665,16 +665,39 @@ A combined filter that allows users to select the lookup expression from a dropd
 * ``field_class`` is an optional argument that allows you to set the inner
   form field class used to validate the value. Default: ``forms.CharField``
 
-ex::
+Example::
 
-    price = django_filters.LookupChoiceFilter(
-        field_class=forms.DecimalField,
-        lookup_choices=[
-            ('exact', 'Equals'),
-            ('gt', 'Greater than'),
-            ('lt', 'Less than'),
-        ]
-    )
+    from django import forms
+    import django_filters
+
+    class BookFilter(django_filters.FilterSet):
+        price = django_filters.LookupChoiceFilter(
+            field_class=forms.DecimalField,
+            lookup_choices=[
+                ('exact', 'Equals'),
+                ('gt', 'Greater than'),
+                ('lt', 'Less than'),
+            ],
+        )
+
+        class Meta:
+            model = Book
+            fields = ['price']
+
+    # Books costing less than 15, equivalent to ?price=15&price_lookup=lt.
+    f = BookFilter({'price': '15', 'price_lookup': 'lt'}, queryset=Book.objects.all())
+    assert f.is_valid()
+    books = f.qs
+
+The default widget uses the filter name for the value and appends ``_lookup``
+for the lookup expression. Both parameters are needed when supplying a value;
+``?price=15`` without ``price_lookup`` produces a validation error. An empty
+value skips filtering, even if a lookup is selected.
+
+All lookup choices must accept values validated by the same ``field_class``.
+Unlike the automatic filter generation in ``Meta.fields``, this filter does
+not select a different form field for each lookup. For example, adding
+``isnull`` to the decimal filter above does not make it accept a boolean value.
 
 .. _base-in-filter:
 .. class:: BaseInFilter
